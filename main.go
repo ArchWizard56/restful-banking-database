@@ -1,9 +1,34 @@
 package main
 
 import (
-    "fmt"
+	"fmt"
+	"os"
+	//	"github.com/gorilla/mux"
+	"encoding/json"
+	"flag"
+	"log"
 )
 
-func main () {
-    fmt.Println("Hello World")
+type Config struct {
+	Port int
+}
+
+func loadConfig() Config {
+	var config Config
+	configFileLocation := flag.String("c", "config.json", "the location of the config file to use")
+	file, err := os.Open(*configFileLocation)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&config)
+	return config
+}
+
+func main() {
+	fmt.Println("Loading Config")
+    config := loadConfig()
+    fmt.Println(config.Port)
+	fmt.Println("Initializing Router")
+    fmt.Println(tmp())
 }
