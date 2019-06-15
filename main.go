@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
+    "net/http"
+    "strconv"
 )
 
 type Config struct {
@@ -28,7 +30,11 @@ func loadConfig() Config {
 func main() {
 	fmt.Println("Loading Config")
     config := loadConfig()
-    fmt.Println(config.Port)
 	fmt.Println("Initializing Router")
-    fmt.Println(tmp())
+    router := InitRouter()
+    fmt.Println("Serving http")
+    err := http.ListenAndServe(":"+strconv.Itoa(config.Port), router)
+    if err != nil {
+        log.Fatal(err)
+    }
 }
