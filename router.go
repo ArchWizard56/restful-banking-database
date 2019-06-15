@@ -14,7 +14,7 @@ type Route struct {
 //Handler functions
 func Placeholder (w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("Placeholder"))
-    fmt.Println(r.Method + " request from " + r.RemoteAddr + " to " + r.URL.Path + " Activating handler 'Placeholder'")
+    fmt.Printf("%s request from %s to %s Activating handler 'Placeholder' \n", r.Method,r.RemoteAddr,r.URL.Path)
 }
 
 func InitRouter () *mux.Router {
