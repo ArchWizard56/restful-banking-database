@@ -43,5 +43,5 @@ func DualWarning (m string) {
 func DualErr (err error) {
     m := fmt.Sprintf("FATAL: %s", err.Error())
     SystemSyslog.Err(m)
-    log.Fatal(err)
+    log.Fatal(m)
 }
