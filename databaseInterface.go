@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+type Account struct {
+    Username string
+    Number string
+    TokValue int
+    CcBal int
+    DcBal int
+    ArBal int
+}
+
 // Function to load a database, or set up a new database, then pass it back
 func LoadDB(DBPath string) *sql.DB {
 	db, err := sql.Open("sqlite3", DBPath)
@@ -79,7 +88,7 @@ func genAccountNumber(db *sql.DB) string {
 }
 
 //Function to create a main account that depends on a username and password
-func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) error {
+func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) (Account, error) {
     DualInfo("Creating main account")
 	var Owner string
 	var TokValue int
@@ -100,7 +109,7 @@ func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) error {
 			DualErr(err)
 		}
 	} else {
-		return errors.New("Account already exists!")
+		return Account{}, errors.New("Account already exists!")
 	}
 	//Generate new Account Number
 	AccountNumber := genAccountNumber(db)
@@ -109,5 +118,8 @@ func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) error {
 	//Create the account entry in the database
 	statement, _ := db.Prepare("INSERT INTO accounts VALUES ($1, $2, $3, $4, $5, $6, $7, $8);")
 	statement.Exec(AccountNumber, OwnerName, hash, "none", TokValue, 0, 0, 10)
-    return nil
+    NewAccount := Account{OwnerName, AccountNumber, TokValue, 0,0,10}
+    return  NewAccount, nil
 }
+
+//func CheckUserAccount (username string, password string, tokenvalue int) (bool, Account, error)
