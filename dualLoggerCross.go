@@ -4,7 +4,6 @@ package main
 
 import (
 	"log"
-    "time"
 )
 
 func SetupLogging () {
