@@ -14,7 +14,7 @@ type Route struct {
 //Handler functions
 func Placeholder (w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("Placeholder"))
-    fmt.Printf("%s request from %s to %s Activating handler 'Placeholder' \n", r.Method,r.RemoteAddr,r.URL.Path)
+    DualLogger(fmt.Sprintf("%s request from %s to %s Activating handler 'Placeholder'", r.Method,r.RemoteAddr,r.URL.Path))
 }
 
 func InitRouter () *mux.Router {
@@ -28,7 +28,7 @@ TheRoutes := []Route{
     },
 }
 router := mux.NewRouter()
-fmt.Println("Loading Routes")
+DualLogger("Loading Routes")
 for _, r := range TheRoutes {
     router.HandleFunc(r.Path, r.Handler).Methods(r.Method)
 }
