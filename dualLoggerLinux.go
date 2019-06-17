@@ -3,7 +3,7 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	"log"
     "log/syslog"
     "os"
@@ -21,22 +21,27 @@ func SetupLogging () {
 }
 
 func DualDebug (m string) {
+    m = fmt.Sprintf("DEBUG: %s", m)
     SystemSyslog.Debug(m)
     log.Print(m)
 }
 func DualInfo (m string) {
+    m = fmt.Sprintf("INFO: %s", m)
     SystemSyslog.Write([]byte(m))
     log.Print(m)
 }
 func DualNotice (m string) {
+    m = fmt.Sprintf("NOTICE: %s", m)
     SystemSyslog.Notice(m)
     log.Print(m)
 }
 func DualWarning (m string) {
+    m = fmt.Sprintf("WARNING: %s", m)
     SystemSyslog.Warning(m)
     log.Print(m)
 }
 func DualErr (err error) {
-    SystemSyslog.Err(err.Error())
+    m := fmt.Sprintf("FATAL: %s", err.Error())
+    SystemSyslog.Err(m)
     log.Fatal(err)
 }
