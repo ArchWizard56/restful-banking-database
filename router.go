@@ -36,6 +36,7 @@ TheRoutes := []Route{
 }
 router := mux.NewRouter()
 DualInfo("Loading Routes")
+//Loop over the list of Routes and add them to the router
 for _, r := range TheRoutes {
     router.HandleFunc(r.Path, r.Handler).Methods(r.Method)
 }

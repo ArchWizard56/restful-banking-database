@@ -11,7 +11,7 @@ import (
 )
 
 var SystemSyslog *syslog.Writer
-
+//Create the system logger
 func SetupLogging () {
     var err error
     SystemSyslog, err = syslog.New(syslog.LOG_INFO,os.Args[0])
@@ -20,6 +20,7 @@ func SetupLogging () {
     }
 }
 
+//Functions to write the different priority levels to Standard Output and syslog
 func DualDebug (m string) {
     m = fmt.Sprintf("DEBUG: %s", m)
     SystemSyslog.Debug(m)
