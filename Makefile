@@ -8,5 +8,12 @@ build: $(BUILDDIR)/$(PROJECTNAME)
 $(BUILDDIR)/$(PROJECTNAME): $(SRCFILES)
 	go build -o "$(BUILDDIR)/$(PROJECTNAME)" $(SRCFILES)
 
-run:
+gorun:
 	go run $(SRCFILES)
+
+run: $(BUILDDIR)/$(PROJECTNAME)
+	$(BUILDDIR)/$(PROJECTNAME)
+
+clean:
+	rm $(BUILDDIR)/$(PROJECTNAME)
+
