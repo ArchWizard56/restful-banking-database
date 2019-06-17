@@ -6,7 +6,6 @@ import (
 	//	"github.com/gorilla/mux"
 	"encoding/json"
 	"flag"
-	//"log"
     "net/http"
     "strconv"
 )
@@ -24,6 +23,9 @@ func loadConfig() Config {
 	}
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
+	if err != nil {
+		DualErr(err)
+	}
 	return config
 }
 

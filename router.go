@@ -17,6 +17,7 @@ func Placeholder (w http.ResponseWriter, r *http.Request) {
     DualInfo(fmt.Sprintf("%s request from %s to %s Activating handler 'Placeholder'", r.Method,r.RemoteAddr,r.URL.Path))
 }
 
+//Use Route structs to construct all the necessary routes
 func InitRouter () *mux.Router {
 // List of all routes for API
 TheRoutes := []Route{
