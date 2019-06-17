@@ -20,6 +20,13 @@ type Account struct {
     ArBal int
 }
 
+type TokenValueHolder struct {
+    TokValue int
+    StoredAt int64
+}
+
+var TokenCache map[string]TokenValueHolder
+
 // Function to load a database, or set up a new database, then pass it back
 func LoadDB(DBPath string) *sql.DB {
 	db, err := sql.Open("sqlite3", DBPath)
@@ -31,6 +38,8 @@ func LoadDB(DBPath string) *sql.DB {
 	statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS accounts (AccountNumber TEXT PRIMARY KEY, OwnerName TEXT, Password TEXT, DiscordName TEXT, TokValue INTEGER, DcBalance INTEGER, CcBalance INTEGER, ArBalance INTEGER)")
 	statement.Exec()
     DualDebug("Initialized Database")
+    TokenCache = make(map[string]TokenValueHolder)
+    DualDebug("Initialized Token Cache")
 	return db
 }
 
@@ -151,7 +160,27 @@ func IsAccountValid (db *sql.DB, username string, password string) (bool, error)
 }
     return false, nil
 }
+//Remove all tokens in the cache that haven't been used in 3 hours
+func CleanTokenCache () {
+    for k, v := range TokenCache {
+        timeElapsed := time.Now().Unix() - v.StoredAt
+        if timeElapsed > 10800 {
+            delete(TokenCache, k)
+            DualDebug("Deleting old token from memory")
+        }
+    }
+}
 func GetToken (db *sql.DB, username string) (int, error) {
+    //First check the token values stored in memory
+    tokValueHolder, ok := TokenCache[username]
+    if ok {
+        DualDebug("Found Token in Memory, using it")
+        tokValueHolder.StoredAt = time.Now().Unix()
+        CleanTokenCache()
+        return tokValueHolder.TokValue, nil
+    //If the token isn't stored in memory, get it from the database
+    } else    {
+    DualDebug("Didn't find Token in Memory, accessing database")
 	accounts, err := db.Query("SELECT TokValue FROM accounts WHERE OwnerName = $1;",username)
     if err != nil {
         DualWarning(fmt.Sprintf("%v", err))
@@ -159,13 +188,16 @@ func GetToken (db *sql.DB, username string) (int, error) {
     }
     var TokValue int
     for accounts.Next(){
-    //Gather the hash
+    //Gather the Token
     err := accounts.Scan(&TokValue)
     if err != nil {
         DualWarning(fmt.Sprintf("%v", err))
         return 0, err 
     }
+    CleanTokenCache()
+    TokenCache[username] = TokenValueHolder{TokValue,time.Now().Unix()}
     return TokValue, nil
 }
-return TokValue, nil
+}
+return 0, nil
 }
