@@ -20,7 +20,7 @@ func loadConfig() Config {
 	configFileLocation := flag.String("c", "config.json", "the location of the config file to use")
 	file, err := os.Open(*configFileLocation)
 	if err != nil {
-		DualFatal(err)
+		DualErr(err)
 	}
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
@@ -29,13 +29,13 @@ func loadConfig() Config {
 
 func main() {
     SetupLogging()
-    DualLogger("Loading Config")
+    DualInfo("Loading Config")
     config := loadConfig()
-	DualLogger("Initializing Router")
+	DualInfo("Initializing Router")
     router := InitRouter()
-    DualLogger("Serving http")
+    DualInfo("Serving http")
     err := http.ListenAndServe(":"+strconv.Itoa(config.Port), router)
     if err != nil {
-        DualFatal(err)
+        DualErr(err)
     }
 }
