@@ -20,12 +20,14 @@ func Placeholder(w http.ResponseWriter, r *http.Request) {
 	DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
 }
 func Register(w http.ResponseWriter, r *http.Request) {
+    //Load credentials from request body
 	var credentials Credentials
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		http.Error(w, "username or password not found", http.StatusBadRequest)
         return
 	}
+    //Create an account using the dataBaseInterface.go file, loading it into "account"
 	var account Account
 	//Create the account
 	account, err = CreateMainAccount(Database, credentials.Username, []byte(credentials.Password))
@@ -35,7 +37,39 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusConflict)
         return
 	}
+    //Use the account details to create a JSON Web Token using the function in authorization.go
     jwt, err := GenToken(account.Username,account.TokValue)
+	if err != nil {
+        DualDebug(fmt.Sprintf("Error reading body: %v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+        return
+    }
+    //Encode the response as JSON and send it back to the client as a response
+    response := map[string]string{"jwt":jwt}
+    var encodedResponse []byte
+    encodedResponse, err = json.Marshal(response)
+	if err != nil {
+        DualDebug(fmt.Sprintf("Error reading body: %v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+        return
+    }
+    w.Write(encodedResponse)
+    //Debug output
+	DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
+}
+func SignIn(w http.ResponseWriter, r *http.Request) {
+	var credentials Credentials
+	err := json.NewDecoder(r.Body).Decode(&credentials)
+	if err != nil {
+		http.Error(w, "username or password not found", http.StatusBadRequest)
+        return
+	}
+    var ValidAccount bool
+    ValidAccount, err = IsAccountValid(Database, credentials.Username, credentials.Password)
+    if ValidAccount == true {
+    var TokValue int
+    TokValue, err = GetToken(Database, credentials.Username)
+    jwt, err := GenToken(credentials.Username,TokValue)
 	if err != nil {
         DualDebug(fmt.Sprintf("Error reading body: %v", err))
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
@@ -51,6 +85,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
     }
     w.Write(encodedResponse)
 	DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
+    } else {
+		http.Error(w, "bad username or password", http.StatusUnauthorized)
+    }
 }
 
 //Use Route structs to construct all the necessary routes
@@ -68,6 +105,12 @@ func InitRouter() *mux.Router {
 			"Post",
 			"/register",
 			Register,
+		},
+		Route{
+			"SignIn",
+			"Post",
+			"/signin",
+			SignIn,
 		},
 	}
 	router := mux.NewRouter()

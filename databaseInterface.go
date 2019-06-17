@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+    "fmt"
 )
 
 type Account struct {
@@ -115,11 +116,56 @@ func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) (Account, 
 	AccountNumber := genAccountNumber(db)
 	//Create a password hash
 	hash, err := bcrypt.GenerateFromPassword(Password, 15)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return Account{}, err
+    }
 	//Create the account entry in the database
 	statement, _ := db.Prepare("INSERT INTO accounts VALUES ($1, $2, $3, $4, $5, $6, $7, $8);")
 	statement.Exec(AccountNumber, OwnerName, hash, "none", TokValue, 0, 0, 10)
     NewAccount := Account{OwnerName, AccountNumber, TokValue, 0,0,10}
     return  NewAccount, nil
 }
-
-//func CheckUserAccount (username string, password string, tokenvalue int) (bool, Account, error)
+//Verify an account is valid, given the username and password
+func IsAccountValid (db *sql.DB, username string, password string) (bool, error) {
+    //Query database for matching user accounts
+	accounts, err := db.Query("SELECT Password FROM accounts WHERE OwnerName = $1;",username)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return false, err
+    }
+    var hash string
+    for accounts.Next(){
+    //Gather the hash
+    err := accounts.Scan(&hash)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return false, err
+    }
+    //Compare the hash, and return appropriatly
+    err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+    if err == nil {
+        return true, nil
+    }
+    return false, nil
+}
+    return false, nil
+}
+func GetToken (db *sql.DB, username string) (int, error) {
+	accounts, err := db.Query("SELECT TokValue FROM accounts WHERE OwnerName = $1;",username)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return 0, err
+    }
+    var TokValue int
+    for accounts.Next(){
+    //Gather the hash
+    err := accounts.Scan(&TokValue)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return 0, err 
+    }
+    return TokValue, nil
+}
+return TokValue, nil
+}
