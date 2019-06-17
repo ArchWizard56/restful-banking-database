@@ -1,9 +1,7 @@
 package main
 
 import (
-	//"fmt"
 	"os"
-	//	"github.com/gorilla/mux"
 	"encoding/json"
 	"flag"
     "net/http"
@@ -15,6 +13,7 @@ type Config struct {
 }
 
 func loadConfig() Config {
+    DualInfo("Loading Config")
 	var config Config
 	configFileLocation := flag.String("c", "config.json", "the location of the config file to use")
 	file, err := os.Open(*configFileLocation)
@@ -31,11 +30,11 @@ func loadConfig() Config {
 
 func main() {
     SetupLogging()
-    DualInfo("Loading Config")
+    DualInfo("Initialized Logging")
     config := loadConfig()
 	DualInfo("Initializing Router")
     router := InitRouter()
-    DualInfo("Serving http")
+    DualInfo("Starting Server")
     err := http.ListenAndServe(":"+strconv.Itoa(config.Port), router)
     if err != nil {
         DualErr(err)
