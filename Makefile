@@ -1,11 +1,12 @@
 PROJECTNAME=restful-banking-database
 BUILDDIR=./bin
-SRCFILES=$(wildcard *.go)
+SRCFILES := $(go list -f '{{.GoFiles}}' | tr -d "[]")
 
 build: $(BUILDDIR)/$(PROJECTNAME)
 .PHONY : build
 
 $(BUILDDIR)/$(PROJECTNAME): $(SRCFILES)
+	echo $(SRCFILES)
 	go build -o "$(BUILDDIR)/$(PROJECTNAME)" $(SRCFILES)
 
 gorun:
