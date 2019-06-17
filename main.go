@@ -6,14 +6,17 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+    "database/sql"
 )
 
 type Config struct {
 	Port int
+    Database string
 }
 
 var configFileLocation *string
 var debug *bool
+var Database *sql.DB
 
 func SetFlags() {
 	configFileLocation = flag.String("c", "config.json", "the location of the config file to use")
@@ -44,6 +47,8 @@ func main() {
 	SetupLogging(*debug)
 	DualInfo("Initialized Logging")
 	config := loadConfig()
+	DualInfo("Loading Database")
+    Database = LoadDB(config.Database)
 	DualInfo("Initializing Router")
 	router := InitRouter()
 	DualInfo("Starting Server")

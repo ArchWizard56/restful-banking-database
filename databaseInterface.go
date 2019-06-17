@@ -20,7 +20,7 @@ func LoadDB(DBPath string) *sql.DB {
 	// AccountNumber    OwnerName   Password    DiscordName     TokValue    DcBalance   CcBalance   ArBalance
 	statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS accounts (AccountNumber TEXT PRIMARY KEY, OwnerName TEXT, Password TEXT, DiscordName TEXT, TokValue INTEGER, DcBalance INTEGER, CcBalance INTEGER, ArBalance INTEGER)")
 	statement.Exec()
-    DualDebug("Initializing Database")
+    DualDebug("Initialized Database")
 	return db
 }
 
