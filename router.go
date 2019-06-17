@@ -14,7 +14,7 @@ type Route struct {
 //Handler functions
 func Placeholder (w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("Placeholder"))
-    DualInfo(fmt.Sprintf("%s request from %s to %s Activating handler 'Placeholder'", r.Method,r.RemoteAddr,r.URL.Path))
+    DualInfo(fmt.Sprintf("%s request from %s to %s", r.Method,r.RemoteAddr,r.URL.Path))
 }
 
 //Use Route structs to construct all the necessary routes
@@ -25,6 +25,12 @@ TheRoutes := []Route{
         "Index",
         "Get",
         "/",
+        Placeholder,
+    },
+    Route {
+        "Register",
+        "Post",
+        "/register",
         Placeholder,
     },
 }
