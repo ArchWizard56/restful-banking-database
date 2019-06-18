@@ -13,16 +13,14 @@ type Credentials struct {
 
 type Claims struct {
     Username string `json:"username"`
-    TokenValue int `json:"tokenvalue"`
 	jwt.StandardClaims
 }
 
-func GenToken (username string, tokenvalue int) (string, error) {
+func GenToken (username string, tokenvalue string) (string, error) {
     DualDebug("Started JWT Generation")
     expirationTime := time.Now().Add(5 * time.Minute)
 	claims := &Claims{
 		Username: username,
-		TokenValue: tokenvalue,
 		StandardClaims : jwt.StandardClaims {
 			ExpiresAt: expirationTime.Unix(),
             IssuedAt:  time.Now().Unix(),
@@ -30,7 +28,8 @@ func GenToken (username string, tokenvalue int) (string, error) {
 	}
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     DualDebug("Signing Token")
-    tokenString, err := token.SignedString([]byte(Secret.Jwtsecret)) 
+    secret := append([]byte(Secret.Jwtsecret),[]byte(tokenvalue)...)
+    tokenString, err := token.SignedString(secret) 
     if err != nil {
         DualErr(err)
     }
@@ -42,11 +41,18 @@ func VerifyToken (Token string) (bool, error) {
     claims := &Claims{}
     DualDebug("Verifying Token")
     tkn, err := jwt.ParseWithClaims(Token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(Secret.Jwtsecret), nil
+        claim := token.Claims.(*Claims)
+        var DBTokenValue string
+        var err error
+        DBTokenValue, err = GetToken(Database, claim.Username)
+        if err != nil {
+            return []byte("bad"), err
+        }
+        secret := append([]byte(Secret.Jwtsecret),[]byte(DBTokenValue)...)
+        DualDebug("generated new secret")
+		return secret, nil
 	})
-    if err != nil {
-        return false, err
-    }
+    DualDebug("Parsed Token")
     if !tkn.Valid {
         DualDebug("Invalid Token")
 		return false, nil
@@ -59,23 +65,26 @@ func VerifyToken (Token string) (bool, error) {
         DualDebug("Bad request found")
 		return false, errors.New("Bad Request")
 	}
-    var DBTokenValue int
-    DBTokenValue, err = GetToken(Database, claims.Username)
-    if err != nil {
-        return false, nil
-    }
-    if claims.TokenValue == DBTokenValue {
-        DualDebug("Success! Token Verified")
+    if tkn.Valid {
+        DualDebug("Success! Valid Token")
         return true, nil
     }
-    DualDebug("Invalid Token Value Found")
     return false, errors.New("Invalid Token Value")
 }
 func GetTokenClaims (Token string) (*Claims, error) {
     claims := &Claims{}
     DualDebug("Getting Token Claims")
     _, err := jwt.ParseWithClaims(Token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(Secret.Jwtsecret), nil
+        claim := token.Claims.(*Claims)
+        var DBTokenValue string
+        var err error
+        DBTokenValue, err = GetToken(Database, claim.Username)
+        if err != nil {
+            return []byte("bad"), err
+        }
+        secret := append([]byte(Secret.Jwtsecret),[]byte(DBTokenValue)...)
+        DualDebug("generated new secret")
+		return secret, nil
 	})
     if err != nil {
         DualWarning(err.Error())

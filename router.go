@@ -69,7 +69,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	var ValidAccount bool
 	ValidAccount, err = IsAccountValid(Database, credentials.Username, credentials.Password)
 	if ValidAccount == true {
-		var TokValue int
+		var TokValue string
 		TokValue, err = GetToken(Database, credentials.Username)
 		jwt, err := GenToken(credentials.Username, TokValue)
 		if err != nil {

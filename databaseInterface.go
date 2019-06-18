@@ -6,26 +6,49 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
+    crand "crypto/rand"
 	"strconv"
 	"time"
     "fmt"
+    "encoding/base64"
 )
 
 type Account struct {
     Username string
     Number string
-    TokValue int
+    TokValue string
     CcBal int
     DcBal int
     ArBal int
 }
 
 type TokenValueHolder struct {
-    TokValue int
+    TokValue string
     StoredAt int64
 }
 
 var TokenCache map[string]TokenValueHolder
+
+func GenerateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := crand.Read(b)
+    // Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+// GenerateRandomString returns a URL-safe, base64 encoded
+// securely generated random string.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func GenerateRandomString(s int) (string, error) {
+	b, err := GenerateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b), err
+}
 
 // Function to load a database, or set up a new database, then pass it back
 func LoadDB(DBPath string) *sql.DB {
@@ -35,7 +58,7 @@ func LoadDB(DBPath string) *sql.DB {
 	}
 	// Initialize Default table consisting of:
 	// AccountNumber    OwnerName   Password    DiscordName     TokValue    DcBalance   CcBalance   ArBalance
-	statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS accounts (AccountNumber TEXT PRIMARY KEY, OwnerName TEXT, Password TEXT, DiscordName TEXT, TokValue INTEGER, DcBalance INTEGER, CcBalance INTEGER, ArBalance INTEGER)")
+	statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS accounts (AccountNumber TEXT PRIMARY KEY, OwnerName TEXT, Password TEXT, DiscordName TEXT, TokValue TEXT, DcBalance INTEGER, CcBalance INTEGER, ArBalance INTEGER)")
 	statement.Exec()
     DualDebug("Initialized Database")
     TokenCache = make(map[string]TokenValueHolder)
@@ -101,7 +124,7 @@ func genAccountNumber(db *sql.DB) string {
 func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) (Account, error) {
     DualInfo("Creating main account")
 	var Owner string
-	var TokValue int
+	var TokValue string
 	accounts, err := db.Query("SELECT OwnerName FROM accounts;")
 	Owners := make([]string, 1)
 	for accounts.Next() {
@@ -113,8 +136,7 @@ func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) (Account, 
 	}
 	if stringNotInSlice(OwnerName, Owners) {
 		//Generate Token ID so that tokens can be revoked
-		rand.Seed(time.Now().UnixNano() + 123432)
-		TokValue = rand.Intn(999)
+        TokValue, err = GenerateRandomString(32)
 		if err != nil {
 			DualErr(err)
 		}
@@ -170,7 +192,7 @@ func CleanTokenCache () {
         }
     }
 }
-func GetToken (db *sql.DB, username string) (int, error) {
+func GetToken (db *sql.DB, username string) (string, error) {
     //First check the token values stored in memory
     tokValueHolder, ok := TokenCache[username]
     if ok {
@@ -184,22 +206,23 @@ func GetToken (db *sql.DB, username string) (int, error) {
 	accounts, err := db.Query("SELECT TokValue FROM accounts WHERE OwnerName = $1;",username)
     if err != nil {
         DualDebug(fmt.Sprintf("%v", err))
-        return 0, err
+        return "", err
     }
-    var TokValue int
+    var TokValue string
     for accounts.Next(){
     //Gather the Token
     err := accounts.Scan(&TokValue)
     if err != nil {
         DualWarning(fmt.Sprintf("%v", err))
-        return 0, err 
+        return "", err 
     }
     CleanTokenCache()
     TokenCache[username] = TokenValueHolder{TokValue,time.Now().Unix()}
+    DualDebug("Found Token Value!")
     return TokValue, nil
 }
 }
-return 0, nil
+return "", nil
 }
 func GetAccounts (db *sql.DB, username string) ([]Account, error) {
     //Query database for matching user accounts
@@ -223,8 +246,10 @@ func GetAccounts (db *sql.DB, username string) ([]Account, error) {
 return Accounts, nil
 }
 func ChangeToken (db *sql.DB, username string) (error) {
-    rand.Seed(time.Now().UnixNano() + 123432)
-    TokValue := rand.Intn(999)
+    TokValue, err := GenerateRandomString(32)
+		if err != nil {
+			DualErr(err)
+		}
 	statement, _ := db.Prepare("UPDATE accounts SET TokValue = $1 WHERE OwnerName = $2")
 	statement.Exec(TokValue,username)
     TokenCache[username] = TokenValueHolder{TokValue,time.Now().Unix()}
