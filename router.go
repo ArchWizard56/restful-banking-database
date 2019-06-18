@@ -40,7 +40,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Use the account details to create a JSON Web Token using the function in authorization.go
-	jwt, err := GenToken(account.Username, account.TokValue)
+    var token string
+    token, err = GetToken(Database, account.Username)
+	if err != nil {
+		DualDebug(fmt.Sprintf("Error reading body: %v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		return
+	}
+	jwt, err := GenToken(account.Username, token)
 	if err != nil {
 		DualDebug(fmt.Sprintf("Error reading body: %v", err))
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
@@ -138,6 +145,52 @@ func LogOut(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
 	}
 }
+func LoadAccounts(w http.ResponseWriter, r *http.Request) {
+    if len(r.Header["Authorization"]) != 1 {
+        err := errors.New("Bad Request")
+        DualDebug(fmt.Sprintf("%v", err))
+        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
+        return
+    }
+    authHeader := r.Header["Authorization"][0]
+	Token := strings.Fields(authHeader)[1]
+    ValidAccount, err := VerifyToken(Token)
+	if err != nil {
+		if err.Error() == "Invalid Token Value" || err.Error() == "Invalid Token" {
+			DualDebug(fmt.Sprintf("%v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+			return
+        }
+        DualDebug(fmt.Sprintf("%v", err))
+        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
+        return
+	}
+	claims, err := GetTokenClaims(Token)
+	if err != nil {
+		DualDebug(fmt.Sprintf("Error reading body: %v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		return
+	}
+	if ValidAccount == true {
+        accounts, err:= GetAccounts(Database,claims.Username)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		var encodedResponse []byte
+		encodedResponse, err = json.Marshal(accounts)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Write(encodedResponse)
+		DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
+	} else {
+		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
+	}
+}
 
 //Use Route structs to construct all the necessary routes
 func InitRouter() *mux.Router {
@@ -166,6 +219,12 @@ func InitRouter() *mux.Router {
 			"Post",
 			"/logout",
 			LogOut,
+		},
+		Route{
+			"Accounts",
+			"Get",
+			"/accounts",
+			LoadAccounts,
 		},
 	}
 	router := mux.NewRouter()

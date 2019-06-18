@@ -16,7 +16,6 @@ import (
 type Account struct {
     Username string
     Number string
-    TokValue string
     CcBal int
     DcBal int
     ArBal int
@@ -154,7 +153,7 @@ func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) (Account, 
 	//Create the account entry in the database
 	statement, _ := db.Prepare("INSERT INTO accounts VALUES ($1, $2, $3, $4, $5, $6, $7, $8);")
 	statement.Exec(AccountNumber, OwnerName, hash, "none", TokValue, 0, 0, 10)
-    NewAccount := Account{OwnerName, AccountNumber, TokValue, 0,0,10}
+    NewAccount := Account{OwnerName, AccountNumber, 0,0,10}
     return  NewAccount, nil
 }
 //Verify an account is valid, given the username and password
@@ -234,9 +233,11 @@ func GetAccounts (db *sql.DB, username string) ([]Account, error) {
     var account Account
     var Accounts []Account
     var dummy []byte
+    var dummyTokValue []byte
+    var dummyName []byte
     for accounts.Next(){
     //Gather the hash
-    err := accounts.Scan(&account.Username, &account.Number, &account.TokValue, dummy, &account.CcBal, &account.DcBal, &account.ArBal)
+    err := accounts.Scan(&account.Number, &account.Username, &dummyTokValue, &dummy, &dummyName, &account.CcBal, &account.DcBal, &account.ArBal)
     if err != nil {
         DualWarning(fmt.Sprintf("%v", err))
         return []Account{Account{}}, err
