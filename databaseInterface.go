@@ -183,7 +183,7 @@ func GetToken (db *sql.DB, username string) (int, error) {
     DualDebug("Didn't find Token in Memory, accessing database")
 	accounts, err := db.Query("SELECT TokValue FROM accounts WHERE OwnerName = $1;",username)
     if err != nil {
-        DualWarning(fmt.Sprintf("%v", err))
+        DualDebug(fmt.Sprintf("%v", err))
         return 0, err
     }
     var TokValue int
@@ -200,4 +200,34 @@ func GetToken (db *sql.DB, username string) (int, error) {
 }
 }
 return 0, nil
+}
+func GetAccounts (db *sql.DB, username string) ([]Account, error) {
+    //Query database for matching user accounts
+	accounts, err := db.Query("SELECT * FROM accounts WHERE OwnerName = $1;",username)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return []Account{Account{}}, err
+    }
+    var account Account
+    var Accounts []Account
+    var dummy []byte
+    for accounts.Next(){
+    //Gather the hash
+    err := accounts.Scan(&account.Username, &account.Number, &account.TokValue, dummy, &account.CcBal, &account.DcBal, &account.ArBal)
+    if err != nil {
+        DualWarning(fmt.Sprintf("%v", err))
+        return []Account{Account{}}, err
+    }
+    Accounts = append(Accounts, account)
+}
+return Accounts, nil
+}
+func ChangeToken (db *sql.DB, username string) (error) {
+    rand.Seed(time.Now().UnixNano() + 123432)
+    TokValue := rand.Intn(999)
+	statement, _ := db.Prepare("UPDATE accounts SET TokValue = $1 WHERE OwnerName = $2")
+	statement.Exec(TokValue,username)
+    TokenCache[username] = TokenValueHolder{TokValue,time.Now().Unix()}
+    CleanTokenCache()
+    return nil
 }
