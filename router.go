@@ -63,6 +63,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(encodedResponse)
+    DualInfo(fmt.Sprintf("%s was registered from %s", claims.Username, r.RemoteAddr))
 	//Debug output
 	DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
 }
@@ -99,6 +100,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func LogOut(w http.ResponseWriter, r *http.Request) {
+    DualDebug("Got logout request")
     if len(r.Header["Authorization"]) != 1 {
         err := errors.New("Bad Request")
         DualDebug(fmt.Sprintf("%v", err))
@@ -118,13 +120,13 @@ func LogOut(w http.ResponseWriter, r *http.Request) {
         http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
         return
 	}
+	if ValidAccount == true {
 	claims, err := GetTokenClaims(Token)
 	if err != nil {
 		DualDebug(fmt.Sprintf("Error reading body: %v", err))
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 		return
 	}
-	if ValidAccount == true {
 		err = ChangeToken(Database, claims.Username)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
@@ -141,6 +143,7 @@ func LogOut(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write(encodedResponse)
 		DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
+        DualInfo(fmt.Sprintf("%s logged out", claims.Username))
 	} else {
 		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
 	}
@@ -165,13 +168,13 @@ func LoadAccounts(w http.ResponseWriter, r *http.Request) {
         http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
         return
 	}
+	if ValidAccount == true {
 	claims, err := GetTokenClaims(Token)
 	if err != nil {
 		DualDebug(fmt.Sprintf("Error reading body: %v", err))
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 		return
 	}
-	if ValidAccount == true {
         accounts, err:= GetAccounts(Database,claims.Username)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))

@@ -87,7 +87,7 @@ func GetTokenClaims (Token string) (*Claims, error) {
 		return secret, nil
 	})
     if err != nil {
-        DualWarning(err.Error())
+        DualDebug(err.Error())
         return claims, err 
     }
     return claims, nil
