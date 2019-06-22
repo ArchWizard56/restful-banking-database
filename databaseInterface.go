@@ -22,11 +22,11 @@ type Account struct {
 }
 
 type Transfer struct {
-    Username string
-    FromAccount string
-    ToAccount string
-    Amount int
-    Type string
+	Username    string
+	FromAccount string
+	ToAccount   string
+	Amount      int
+	Type        string
 }
 
 type TokenValueHolder struct {
@@ -325,7 +325,7 @@ func ChangeToken(db *sql.DB, username string) error {
 }
 func TransferFunc(db *sql.DB, transfer Transfer) error {
 	//Make sure the user isn't trying to transfer a negative number
-	DualInfo(fmt.Sprintf("%s is beginning a transfer from %s to %s of amount %s %s", transfer.Username, transfer.FromAccount, transfer.ToAccount, transfer.Amount, transfer.Type))
+	DualInfo(fmt.Sprintf("%s is beginning a transfer from %s to %s of amount %d %s", transfer.Username, transfer.FromAccount, transfer.ToAccount, transfer.Amount, transfer.Type))
 	if transfer.Amount < 0 {
 		DualNotice("User attempted to transfer negative number")
 		return errors.New("Cannot transfer negative number. Nice Try ;)")
@@ -393,34 +393,70 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 		return errors.New("Cannot Transfer From Unowned Account")
 	}
 	//Make sure the user has the balance to complete the transfer
-    var balanceType string
+    var statement1 *sql.Stmt
+    var statement2 *sql.Stmt
 	if transfer.Type == "ArBal" {
 		if fromAccount.ArBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
 			return errors.New("Not enough balance")
 		}
+        statement1, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance - $1 WHERE AccountNumber = $2")
+        if err != nil {
+            DualWarning(fmt.Sprintf("%v", err))
+            return err
+        }
+        statement2, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance + $1 WHERE AccountNumber = $2")
+        if err != nil {
+            DualWarning(fmt.Sprintf("%v", err))
+            return err
+        }
 	} else if transfer.Type == "DcBal" {
-		if fromAccount.ArBal < transfer.Amount {
+		if fromAccount.DcBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
 			return errors.New("Not enough balance")
 		}
-		balanceType = "DcBalance"
+        statement1, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance - $1 WHERE AccountNumber = $2")
+        if err != nil {
+            DualWarning(fmt.Sprintf("%v", err))
+            return err
+        }
+        statement2, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance + $1 WHERE AccountNumber = $2")
+        if err != nil {
+            DualWarning(fmt.Sprintf("%v", err))
+            return err
+        }
 	} else if transfer.Type == "CcBal" {
-		if fromAccount.ArBal < transfer.Amount {
+		if fromAccount.CcBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
 			return errors.New("Not enough balance")
 		}
-        balanceType = "CcBalance"
+        statement1, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance - $1 WHERE AccountNumber = $2")
+        if err != nil {
+            DualWarning(fmt.Sprintf("%v", err))
+            return err
+        }
+        statement2, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance + $1 WHERE AccountNumber = $2")
+        if err != nil {
+            DualWarning(fmt.Sprintf("%v", err))
+            return err
+            }
 	} else {
 		DualDebug("Invalid Balance Type")
 		return errors.New("Invalid Balance Type")
 	}
 	DualDebug("Checks succeeded; beginning transfer")
 	//Complete the transfer
-	statement, _ := db.Prepare("UPDATE accounts SET $1 = $1 - $2 WHERE AccountNumber = $3")
-	statement.Exec(balanceType, transfer.Amount, fromAccount.Number)
-	statement, _  = db.Prepare("UPDATE accounts SET $1 = $1 + $2 WHERE AccountNumber = $3")
-	statement.Exec(balanceType, transfer.Amount, toAccount.Number)
+	_,err = statement1.Exec(transfer.Amount, fromAccount.Number)
+	if err != nil {
+		DualWarning(fmt.Sprintf("%v", err))
+		return err
+	}
+	DualDebug("Checks succeeded; beginning transfer")
+	_,err = statement2.Exec(transfer.Amount, toAccount.Number)
+	if err != nil {
+		DualWarning(fmt.Sprintf("%v", err))
+		return err
+	}
 	DualNotice("Transfer Completed!")
 	return nil
 }

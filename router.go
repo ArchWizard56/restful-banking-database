@@ -240,6 +240,55 @@ func OpenAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
 	}
 }
+func Refresh(w http.ResponseWriter, r *http.Request) {
+	if len(r.Header["Authorization"]) != 1 {
+		err := errors.New("Forbidden")
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+		return
+	}
+	authHeader := r.Header["Authorization"][0]
+	Token := strings.Fields(authHeader)[1]
+	ValidAccount, err := VerifyToken(Token)
+	if err != nil {
+		if err.Error() == "Invalid Token Value" || err.Error() == "Invalid Token" {
+			DualDebug(fmt.Sprintf("%v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+			return
+		}
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
+		return
+	}
+	if ValidAccount == true {
+		claims, err := GetTokenClaims(Token)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		var TokValue string
+		TokValue, err = GetToken(Database, claims.Username)
+		jwt, err := GenToken(claims.Username, TokValue)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		response := map[string]string{"jwt": jwt}
+		var encodedResponse []byte
+		encodedResponse, err = json.Marshal(response)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Write(encodedResponse)
+		DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
+	} else {
+		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
+	}
+}
 func TransferHandler(w http.ResponseWriter, r *http.Request) {
 	if len(r.Header["Authorization"]) != 1 {
 		err := errors.New("Forbidden")
@@ -273,15 +322,17 @@ func TransferHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 			return
 		}
-        transfer.Username = claims.Username
-		accounts, err := CreateSubAccount(Database, transferRequest)
+        transferRequest.Username = claims.Username
+		err = TransferFunc(Database, transferRequest)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 			return
 		}
+	    	
 		var encodedResponse []byte
-		encodedResponse, err = json.Marshal(accounts)
+		response := map[string]string{"result": "success"}
+		encodedResponse, err = json.Marshal(response)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
@@ -331,14 +382,20 @@ func InitRouter() *mux.Router {
 		Route{
 			"Transfer",
 			"Post",
-			"/{id}/transfer",
-			Transfer,
+			"/transfer",
+			TransferHandler,
 		},
 		Route{
 			"Accounts",
 			"Get",
 			"/accounts",
 			LoadAccounts,
+		},
+		Route{
+			"Refresh",
+			"Get",
+			"/refresh",
+			Refresh,
 		},
 	}
 	router := mux.NewRouter()

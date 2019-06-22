@@ -2,7 +2,7 @@ PROJECTNAME=restful-banking-database
 BUILDDIR=./bin
 SRCFILES=$(shell go list -f '{{.GoFiles}}' | tr -d '[]')
 RUNFLAGS="-d"
-BUILDFLAGS="-v"
+BUILDFLAGS=-v
 DEPENDFILE="dependencies.txt"
 
 build: $(BUILDDIR)/$(PROJECTNAME)
