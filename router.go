@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
-    "strings"
-    "errors"
+	"strings"
 )
 
 type Route struct {
@@ -40,8 +40,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Use the account details to create a JSON Web Token using the function in authorization.go
-    var token string
-    token, err = GetToken(Database, account.Username)
+	var token string
+	token, err = GetToken(Database, account.Username)
 	if err != nil {
 		DualDebug(fmt.Sprintf("Error reading body: %v", err))
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
@@ -63,7 +63,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(encodedResponse)
-    DualInfo(fmt.Sprintf("%s was registered from %s", account.Username, r.RemoteAddr))
+	DualInfo(fmt.Sprintf("%s was registered from %s", account.Username, r.RemoteAddr))
 	//Debug output
 	DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
 }
@@ -100,33 +100,33 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func LogOut(w http.ResponseWriter, r *http.Request) {
-    DualDebug("Got logout request")
-    if len(r.Header["Authorization"]) != 1 {
-        err := errors.New("Bad Request")
-        DualDebug(fmt.Sprintf("%v", err))
-        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
-        return
-    }
-    authHeader := r.Header["Authorization"][0]
+	DualDebug("Got logout request")
+	if len(r.Header["Authorization"]) != 1 {
+		err := errors.New("Unauthorized")
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+		return
+	}
+	authHeader := r.Header["Authorization"][0]
 	Token := strings.Fields(authHeader)[1]
-    ValidAccount, err := VerifyToken(Token)
+	ValidAccount, err := VerifyToken(Token)
 	if err != nil {
 		if err.Error() == "Invalid Token Value" || err.Error() == "Invalid Token" {
 			DualDebug(fmt.Sprintf("%v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
 			return
-        }
-        DualDebug(fmt.Sprintf("%v", err))
-        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
-        return
-	}
-	if ValidAccount == true {
-	claims, err := GetTokenClaims(Token)
-	if err != nil {
-		DualDebug(fmt.Sprintf("Error reading body: %v", err))
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		}
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
 		return
 	}
+	if ValidAccount == true {
+		claims, err := GetTokenClaims(Token)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
 		err = ChangeToken(Database, claims.Username)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
@@ -143,39 +143,39 @@ func LogOut(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write(encodedResponse)
 		DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
-        DualInfo(fmt.Sprintf("%s logged out", claims.Username))
+		DualInfo(fmt.Sprintf("%s logged out", claims.Username))
 	} else {
 		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
 	}
 }
 func LoadAccounts(w http.ResponseWriter, r *http.Request) {
-    if len(r.Header["Authorization"]) != 1 {
-        err := errors.New("Bad Request")
-        DualDebug(fmt.Sprintf("%v", err))
-        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
-        return
-    }
-    authHeader := r.Header["Authorization"][0]
+	if len(r.Header["Authorization"]) != 1 {
+		err := errors.New("Unauthorized")
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+		return
+	}
+	authHeader := r.Header["Authorization"][0]
 	Token := strings.Fields(authHeader)[1]
-    ValidAccount, err := VerifyToken(Token)
+	ValidAccount, err := VerifyToken(Token)
 	if err != nil {
 		if err.Error() == "Invalid Token Value" || err.Error() == "Invalid Token" {
 			DualDebug(fmt.Sprintf("%v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
 			return
-        }
-        DualDebug(fmt.Sprintf("%v", err))
-        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
-        return
-	}
-	if ValidAccount == true {
-	claims, err := GetTokenClaims(Token)
-	if err != nil {
-		DualDebug(fmt.Sprintf("Error reading body: %v", err))
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		}
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
 		return
 	}
-        accounts, err:= GetAccounts(Database,claims.Username)
+	if ValidAccount == true {
+		claims, err := GetTokenClaims(Token)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		accounts, err := GetAccounts(Database, claims.Username)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
@@ -195,33 +195,86 @@ func LoadAccounts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func OpenAccount(w http.ResponseWriter, r *http.Request) {
-    if len(r.Header["Authorization"]) != 1 {
-        err := errors.New("Bad Request")
-        DualDebug(fmt.Sprintf("%v", err))
-        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
-        return
-    }
-    authHeader := r.Header["Authorization"][0]
+	if len(r.Header["Authorization"]) != 1 {
+		err := errors.New("Forbidden")
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+		return
+	}
+	authHeader := r.Header["Authorization"][0]
 	Token := strings.Fields(authHeader)[1]
-    ValidAccount, err := VerifyToken(Token)
+	ValidAccount, err := VerifyToken(Token)
 	if err != nil {
 		if err.Error() == "Invalid Token Value" || err.Error() == "Invalid Token" {
 			DualDebug(fmt.Sprintf("%v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
 			return
-        }
-        DualDebug(fmt.Sprintf("%v", err))
-        http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
-        return
-	}
-	if ValidAccount == true {
-	claims, err := GetTokenClaims(Token)
-	if err != nil {
-		DualDebug(fmt.Sprintf("Error reading body: %v", err))
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		}
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
 		return
 	}
-        accounts, err:= CreateSubAccount(Database,claims.Username)
+	if ValidAccount == true {
+		claims, err := GetTokenClaims(Token)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		accounts, err := CreateSubAccount(Database, claims.Username)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		var encodedResponse []byte
+		encodedResponse, err = json.Marshal(accounts)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Write(encodedResponse)
+		DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
+	} else {
+		http.Error(w, "Bad AuthToken", http.StatusUnauthorized)
+	}
+}
+func TransferHandler(w http.ResponseWriter, r *http.Request) {
+	if len(r.Header["Authorization"]) != 1 {
+		err := errors.New("Forbidden")
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+		return
+	}
+	authHeader := r.Header["Authorization"][0]
+	Token := strings.Fields(authHeader)[1]
+	ValidAccount, err := VerifyToken(Token)
+	if err != nil {
+		if err.Error() == "Invalid Token Value" || err.Error() == "Invalid Token" {
+			DualDebug(fmt.Sprintf("%v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusUnauthorized)
+			return
+		}
+		DualDebug(fmt.Sprintf("%v", err))
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
+		return
+	}
+	if ValidAccount == true {
+		var transferRequest Transfer
+		err := json.NewDecoder(r.Body).Decode(&transferRequest)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		claims, err := GetTokenClaims(Token)
+		if err != nil {
+			DualDebug(fmt.Sprintf("Error reading body: %v", err))
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			return
+		}
+        transfer.Username = claims.Username
+		accounts, err := CreateSubAccount(Database, transferRequest)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
@@ -274,6 +327,12 @@ func InitRouter() *mux.Router {
 			"Post",
 			"/logout",
 			LogOut,
+		},
+		Route{
+			"Transfer",
+			"Post",
+			"/{id}/transfer",
+			Transfer,
 		},
 		Route{
 			"Accounts",

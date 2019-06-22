@@ -21,6 +21,14 @@ type Account struct {
 	ArBal    int
 }
 
+type Transfer struct {
+    Username string
+    FromAccount string
+    ToAccount string
+    Amount int
+    Type string
+}
+
 type TokenValueHolder struct {
 	TokValue string
 	StoredAt int64
@@ -177,7 +185,7 @@ func CreateSubAccount(db *sql.DB, username string) (Account, error) {
 		}
 		break
 	}
-    accounts.Close()
+	accounts.Close()
 	//Get token value
 	var TokValue string
 	TokValue, err = GetToken(db, username)
@@ -204,7 +212,7 @@ func CreateSubAccount(db *sql.DB, username string) (Account, error) {
 func IsAccountValid(db *sql.DB, username string, password string) (bool, error) {
 	//Query database for matching user accounts
 	accounts, err := db.Query("SELECT Password FROM accounts WHERE OwnerName = $1;", username)
-    defer accounts.Close()
+	defer accounts.Close()
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
 		return false, err
@@ -217,15 +225,16 @@ func IsAccountValid(db *sql.DB, username string, password string) (bool, error) 
 			DualWarning(fmt.Sprintf("%v", err))
 			return false, err
 		}
+		//rowCount = rowCount + 1
 		break
 	}
 	//Compare the hash, and return appropriatly
 	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err == nil {
-        accounts.Close()
+		accounts.Close()
 		return true, nil
 	}
-    accounts.Close()
+	accounts.Close()
 	return false, nil
 }
 
@@ -276,21 +285,19 @@ func GetToken(db *sql.DB, username string) (string, error) {
 func GetAccounts(db *sql.DB, username string) ([]Account, error) {
 	DualDebug("Got request to list accounts")
 	//Query database for matching user accounts
-	accounts, err := db.Query("SELECT * FROM accounts WHERE OwnerName = $1;", username)
+	accounts, err := db.Query("SELECT AccountNumber, OwnerName, DcBalance, CcBalance, ArBalance FROM accounts WHERE OwnerName = $1;", username)
 	defer accounts.Close()
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
 		return []Account{Account{}}, err
 	}
+	//Initialize variables
 	var account Account
 	var Accounts []Account
-	var dummy []byte
-	var dummyTokValue []byte
-	var dummyName []byte
 	for accounts.Next() {
 		//Gather the hash
 		DualDebug("Found Account")
-		err := accounts.Scan(&account.Number, &account.Username, &dummyTokValue, &dummy, &dummyName, &account.CcBal, &account.DcBal, &account.ArBal)
+		err := accounts.Scan(&account.Number, &account.Username, &account.DcBal, &account.CcBal, &account.ArBal)
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
 			return []Account{Account{}}, err
@@ -302,13 +309,118 @@ func GetAccounts(db *sql.DB, username string) ([]Account, error) {
 	return Accounts, nil
 }
 func ChangeToken(db *sql.DB, username string) error {
+	//Generate a new token string
 	TokValue, err := GenerateRandomString(32)
 	if err != nil {
 		DualErr(err)
 	}
+	//Set the token in the database for the user to the new token
 	statement, _ := db.Prepare("UPDATE accounts SET TokValue = $1 WHERE OwnerName = $2")
 	statement.Exec(TokValue, username)
+	//Update the token cache with the user's new token
 	TokenCache[username] = TokenValueHolder{TokValue, time.Now().Unix()}
+	//Clear old tokens
 	CleanTokenCache()
+	return nil
+}
+func TransferFunc(db *sql.DB, transfer Transfer) error {
+	//Make sure the user isn't trying to transfer a negative number
+	DualInfo(fmt.Sprintf("%s is beginning a transfer from %s to %s of amount %s %s", transfer.Username, transfer.FromAccount, transfer.ToAccount, transfer.Amount, transfer.Type))
+	if transfer.Amount < 0 {
+		DualNotice("User attempted to transfer negative number")
+		return errors.New("Cannot transfer negative number. Nice Try ;)")
+	}
+	//Getting the account to transfer from
+	//Query db for matching account
+	DualDebug("Accessing account database")
+	accounts, err := db.Query("SELECT OwnerName, DcBalance, CcBalance, ArBalance FROM accounts WHERE AccountNumber = $1;", transfer.FromAccount)
+	defer accounts.Close()
+	if err != nil {
+		DualWarning(fmt.Sprintf("%v", err))
+		return err
+	}
+	//Empty account object
+	var fromAccount Account
+	fromAccount.Number = transfer.FromAccount
+	rowCount := 0
+	for accounts.Next() {
+		//Populate accout
+		err := accounts.Scan(&fromAccount.Username, &fromAccount.DcBal, &fromAccount.CcBal, &fromAccount.ArBal)
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
+		rowCount = rowCount + 1
+		break
+	}
+	DualDebug("Got database info")
+	accounts.Close()
+	if rowCount == 0 {
+		DualDebug("Account not found")
+		return errors.New("Account not found")
+	}
+	//Repeat for to account
+	DualDebug("Accessing account database")
+	accounts, err = db.Query("SELECT OwnerName, DcBalance, CcBalance, ArBalance FROM accounts WHERE AccountNumber = $1;", transfer.ToAccount)
+	defer accounts.Close()
+	if err != nil {
+		DualWarning(fmt.Sprintf("%v", err))
+		return err
+	}
+	//Empty account object
+	var toAccount Account
+	toAccount.Number = transfer.ToAccount
+	rowCount = 0
+	for accounts.Next() {
+		//Populate accout
+		err := accounts.Scan(&toAccount.Username, &toAccount.DcBal, &toAccount.CcBal, &toAccount.ArBal)
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
+		rowCount = rowCount + 1
+		break
+	}
+	DualDebug("Got database info")
+	accounts.Close()
+	if rowCount == 0 {
+		DualDebug("Account not found")
+		return errors.New("Account not found")
+	}
+	//Make sure the user owns the requested account to transfer from
+	if fromAccount.Username != transfer.Username {
+		DualDebug("Cannot Transfer from unowned account")
+		return errors.New("Cannot Transfer From Unowned Account")
+	}
+	//Make sure the user has the balance to complete the transfer
+    var balanceType string
+	if transfer.Type == "ArBal" {
+		if fromAccount.ArBal < transfer.Amount {
+			DualDebug("Not enough balance to complete transfer")
+			return errors.New("Not enough balance")
+		}
+	} else if transfer.Type == "DcBal" {
+		if fromAccount.ArBal < transfer.Amount {
+			DualDebug("Not enough balance to complete transfer")
+			return errors.New("Not enough balance")
+		}
+		balanceType = "DcBalance"
+	} else if transfer.Type == "CcBal" {
+		if fromAccount.ArBal < transfer.Amount {
+			DualDebug("Not enough balance to complete transfer")
+			return errors.New("Not enough balance")
+		}
+        balanceType = "CcBalance"
+	} else {
+		DualDebug("Invalid Balance Type")
+		return errors.New("Invalid Balance Type")
+	}
+	DualDebug("Checks succeeded; beginning transfer")
+	//Complete the transfer
+	statement, _ := db.Prepare("UPDATE accounts SET $1 = $1 - $2 WHERE AccountNumber = $3")
+	statement.Exec(balanceType, transfer.Amount, fromAccount.Number)
+	statement, _  = db.Prepare("UPDATE accounts SET $1 = $1 + $2 WHERE AccountNumber = $3")
+	statement.Exec(balanceType, transfer.Amount, toAccount.Number)
+	DualNotice("Transfer Completed!")
 	return nil
 }
