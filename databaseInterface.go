@@ -393,66 +393,66 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 		return errors.New("Cannot Transfer From Unowned Account")
 	}
 	//Make sure the user has the balance to complete the transfer
-    var statement1 *sql.Stmt
-    var statement2 *sql.Stmt
+	var statement1 *sql.Stmt
+	var statement2 *sql.Stmt
 	if transfer.Type == "ArBal" {
 		if fromAccount.ArBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
 			return errors.New("Not enough balance")
 		}
-        statement1, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance - $1 WHERE AccountNumber = $2")
-        if err != nil {
-            DualWarning(fmt.Sprintf("%v", err))
-            return err
-        }
-        statement2, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance + $1 WHERE AccountNumber = $2")
-        if err != nil {
-            DualWarning(fmt.Sprintf("%v", err))
-            return err
-        }
+		statement1, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance - $1 WHERE AccountNumber = $2")
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
+		statement2, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance + $1 WHERE AccountNumber = $2")
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
 	} else if transfer.Type == "DcBal" {
 		if fromAccount.DcBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
 			return errors.New("Not enough balance")
 		}
-        statement1, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance - $1 WHERE AccountNumber = $2")
-        if err != nil {
-            DualWarning(fmt.Sprintf("%v", err))
-            return err
-        }
-        statement2, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance + $1 WHERE AccountNumber = $2")
-        if err != nil {
-            DualWarning(fmt.Sprintf("%v", err))
-            return err
-        }
+		statement1, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance - $1 WHERE AccountNumber = $2")
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
+		statement2, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance + $1 WHERE AccountNumber = $2")
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
 	} else if transfer.Type == "CcBal" {
 		if fromAccount.CcBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
 			return errors.New("Not enough balance")
 		}
-        statement1, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance - $1 WHERE AccountNumber = $2")
-        if err != nil {
-            DualWarning(fmt.Sprintf("%v", err))
-            return err
-        }
-        statement2, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance + $1 WHERE AccountNumber = $2")
-        if err != nil {
-            DualWarning(fmt.Sprintf("%v", err))
-            return err
-            }
+		statement1, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance - $1 WHERE AccountNumber = $2")
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
+		statement2, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance + $1 WHERE AccountNumber = $2")
+		if err != nil {
+			DualWarning(fmt.Sprintf("%v", err))
+			return err
+		}
 	} else {
 		DualDebug("Invalid Balance Type")
 		return errors.New("Invalid Balance Type")
 	}
 	DualDebug("Checks succeeded; beginning transfer")
 	//Complete the transfer
-	_,err = statement1.Exec(transfer.Amount, fromAccount.Number)
+	_, err = statement1.Exec(transfer.Amount, fromAccount.Number)
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
 		return err
 	}
 	DualDebug("Checks succeeded; beginning transfer")
-	_,err = statement2.Exec(transfer.Amount, toAccount.Number)
+	_, err = statement2.Exec(transfer.Amount, toAccount.Number)
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
 		return err

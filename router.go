@@ -322,14 +322,14 @@ func TransferHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 			return
 		}
-        transferRequest.Username = claims.Username
+		transferRequest.Username = claims.Username
 		err = TransferFunc(Database, transferRequest)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 			return
 		}
-	    	
+
 		var encodedResponse []byte
 		response := map[string]string{"result": "success"}
 		encodedResponse, err = json.Marshal(response)
