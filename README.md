@@ -41,3 +41,33 @@ $ cd your-location
 $ ./restful-banking-database
 ```
 The default port is `8050` and the default database is called `accounts.db`.
+## Command line options
+You can run the binary with the `-h` flag to show help
+```
+$./bin/restful-banking-database -h
+Usage of ./bin/restful-banking-database:
+  -c string
+        the location of the config file to use (default "config.json")
+  -d    toggles debug output
+  -s string
+        the location of the secrets file to use (default "secrets.json")
+```
+You can use `-c` to use a different location for the configuration file, `-s` to use a different location for the secrets file, and `-d` to toggle all of the debug output.
+## Configuration file parameters
+
+config.json:
+```json
+{
+	"port": 8050,
+    "database": "accounts.db"
+}
+```
+Change the `port` parameter to set the port that the application listens on, and change the `database` parameter to change the location of the database file that the application uses. There's no need to initialize the database; the application will handle all of that.
+
+secrets.json
+```json
+{
+    "jwtsecret":"CHANGEME"
+}
+```
+You really should change the `jwtsecret` parameter in order to secure the jwt token generation.
