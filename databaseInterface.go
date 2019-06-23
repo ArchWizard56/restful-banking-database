@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"strconv"
+    "net/http"
 	"time"
 )
 
@@ -323,12 +324,13 @@ func ChangeToken(db *sql.DB, username string) error {
 	CleanTokenCache()
 	return nil
 }
-func TransferFunc(db *sql.DB, transfer Transfer) error {
+func TransferFunc(db *sql.DB, transfer Transfer) (error, int){
 	//Make sure the user isn't trying to transfer a negative number
 	DualInfo(fmt.Sprintf("%s is beginning a transfer from %s to %s of amount %d %s", transfer.Username, transfer.FromAccount, transfer.ToAccount, transfer.Amount, transfer.Type))
 	if transfer.Amount < 0 {
 		DualNotice("User attempted to transfer negative number")
-		return errors.New("Cannot transfer negative number. Nice Try ;)")
+        DualInfo("Transfer Failed")
+		return errors.New("Cannot transfer negative number. Nice Try ;)"), http.StatusBadRequest
 	}
 	//Getting the account to transfer from
 	//Query db for matching account
@@ -337,7 +339,8 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 	defer accounts.Close()
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
-		return err
+        DualInfo("Transfer Failed")
+		return err, http.StatusInternalServerError
 	}
 	//Empty account object
 	var fromAccount Account
@@ -348,7 +351,8 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 		err := accounts.Scan(&fromAccount.Username, &fromAccount.DcBal, &fromAccount.CcBal, &fromAccount.ArBal)
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+            return err, http.StatusInternalServerError
 		}
 		rowCount = rowCount + 1
 		break
@@ -357,7 +361,8 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 	accounts.Close()
 	if rowCount == 0 {
 		DualDebug("Account not found")
-		return errors.New("Account not found")
+        DualInfo("Transfer Failed")
+		return errors.New("Account not found"), http.StatusBadRequest
 	}
 	//Repeat for to account
 	DualDebug("Accessing account database")
@@ -365,7 +370,8 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 	defer accounts.Close()
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
-		return err
+        DualInfo("Transfer Failed")
+		return err, http.StatusInternalServerError
 	}
 	//Empty account object
 	var toAccount Account
@@ -376,7 +382,8 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 		err := accounts.Scan(&toAccount.Username, &toAccount.DcBal, &toAccount.CcBal, &toAccount.ArBal)
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 		rowCount = rowCount + 1
 		break
@@ -385,12 +392,14 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 	accounts.Close()
 	if rowCount == 0 {
 		DualDebug("Account not found")
-		return errors.New("Account not found")
+        DualInfo("Transfer Failed")
+		return errors.New("Account not found"), http.StatusBadRequest
 	}
 	//Make sure the user owns the requested account to transfer from
 	if fromAccount.Username != transfer.Username {
 		DualDebug("Cannot Transfer from unowned account")
-		return errors.New("Cannot Transfer From Unowned Account")
+        DualInfo("Transfer Failed")
+		return errors.New("Cannot Transfer From Unowned Account"), http.StatusForbidden
 	}
 	//Make sure the user has the balance to complete the transfer
 	var statement1 *sql.Stmt
@@ -398,65 +407,77 @@ func TransferFunc(db *sql.DB, transfer Transfer) error {
 	if transfer.Type == "ArBal" {
 		if fromAccount.ArBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
-			return errors.New("Not enough balance")
+            DualInfo("Transfer Failed")
+			return errors.New("Not enough balance"), http.StatusBadRequest
 		}
 		statement1, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance - $1 WHERE AccountNumber = $2")
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 		statement2, err = db.Prepare("UPDATE accounts SET ArBalance = ArBalance + $1 WHERE AccountNumber = $2")
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 	} else if transfer.Type == "DcBal" {
 		if fromAccount.DcBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
-			return errors.New("Not enough balance")
+            DualInfo("Transfer Failed")
+			return errors.New("Not enough balance"), http.StatusBadRequest
 		}
 		statement1, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance - $1 WHERE AccountNumber = $2")
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 		statement2, err = db.Prepare("UPDATE accounts SET DcBalance = DcBalance + $1 WHERE AccountNumber = $2")
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 	} else if transfer.Type == "CcBal" {
 		if fromAccount.CcBal < transfer.Amount {
 			DualDebug("Not enough balance to complete transfer")
-			return errors.New("Not enough balance")
+            DualInfo("Transfer Failed")
+			return errors.New("Not enough balance"), http.StatusBadRequest
 		}
 		statement1, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance - $1 WHERE AccountNumber = $2")
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 		statement2, err = db.Prepare("UPDATE accounts SET CcBalance = CcBalance + $1 WHERE AccountNumber = $2")
 		if err != nil {
 			DualWarning(fmt.Sprintf("%v", err))
-			return err
+            DualInfo("Transfer Failed")
+			return err, http.StatusInternalServerError
 		}
 	} else {
 		DualDebug("Invalid Balance Type")
-		return errors.New("Invalid Balance Type")
+        DualInfo("Transfer Failed")
+		return errors.New("Invalid Balance Type"), http.StatusBadRequest
 	}
 	DualDebug("Checks succeeded; beginning transfer")
 	//Complete the transfer
 	_, err = statement1.Exec(transfer.Amount, fromAccount.Number)
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
-		return err
+        DualInfo("Transfer Failed")
+		return err, http.StatusInternalServerError
 	}
 	DualDebug("Checks succeeded; beginning transfer")
 	_, err = statement2.Exec(transfer.Amount, toAccount.Number)
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
-		return err
+        DualInfo("Transfer Failed")
+		return err, http.StatusInternalServerError
 	}
-	DualNotice("Transfer Completed!")
-	return nil
+	DualInfo("Transfer Completed!")
+	return nil, http.StatusOK
 }

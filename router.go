@@ -323,10 +323,11 @@ func TransferHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		transferRequest.Username = claims.Username
-		err = TransferFunc(Database, transferRequest)
+        var httpResp int
+		err, httpResp = TransferFunc(Database, transferRequest)
 		if err != nil {
 			DualDebug(fmt.Sprintf("Error reading body: %v", err))
-			http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("%v", err), httpResp)
 			return
 		}
 
