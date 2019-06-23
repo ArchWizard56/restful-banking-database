@@ -171,7 +171,7 @@ func CreateMainAccount(db *sql.DB, OwnerName string, Password []byte) (Account, 
 	}
 	//Create the account entry in the database
 	statement, _ := db.Prepare("INSERT INTO accounts VALUES ($1, $2, $3, $4, $5, $6, $7, $8);")
-	statement.Exec(AccountNumber, OwnerName, hash, "none", TokValue, 0, 0, 10)
+	statement.Exec(AccountNumber, OwnerName, hash, "none", TokValue, 0, 0, 0)
 	NewAccount := Account{OwnerName, AccountNumber, 0, 0, 10}
 	return NewAccount, nil
 }
