@@ -1,8 +1,8 @@
 # restful-banking-database
-This project provides an api for the managment of a sqlite database containing accounts and three types of balance.
+This project provides an api for the managment of a sqlite database containing accounts and three currencies.
 
 ## Installation
-### Note: for non linux users, these instructions might be off, especially for windows users not using the subsystem. Feel free to amend this documentation with instructions for other platforms
+### Note: for Non-Linux users, these instructions might be off, especially for Windows users not using Bash. Feel free to amend this documentation with instructions for other platforms
 Make sure you have `go` installed:
 ```sh
 $ which go
@@ -34,7 +34,7 @@ $ cp default_secrets.json your-location/secrets.json
 ```
 Make sure you change the secret value in `secrets.json` from `CHANGEME`to a secret key that only you know. Here's how you would do it with `sed`:
 ```sh
-$ sed -i 's/CHANGEME/yoursecret/g' your-location/secrets.json
+$ sed -i 's/CHANGEME/<yoursecret>/g' your-location/secrets.json
 ```
 Finally, you can run the program:
 ```sh
@@ -72,5 +72,19 @@ secrets.json:
 }
 ```
 You really should change the `jwtsecret` parameter in order to secure the jwt token generation.
+## Updating the database
+User accounts don't have a balance when created, so you'll have to manually update the balance of a new account to the initial value. This is done to prevent a user from creating many accounts and transfering the created amount to another account. In order to manually update the balance you can enter the database with:
+```sh
+$ sqlite3 <your-database>
+```
+The default name of the database is `accounts.db`, but it can be changed in the config file. After entering the database you can update the balance with a sql statement like this:
+```sql
+UPDATE accounts SET <balance type> = <default amount> WHERE AccountNumber = <account number>;
+```
+As an example:
+```sh
+$ sqlite3 accounts.db
+> UPDATE accounts SET ArBalance = 10 WHERE AccountNUmber = 11198;
+```
 ## API Documentation
 See [the documentation](API.md)
