@@ -27,7 +27,7 @@ The binary will be placed in `bin/`. Move the binary wherever you want it:
 ```sh
 $ mv bin/restful-banking-database your-location/
 ```
-You'll have to copy the configuration files into the directory containing your binary (the secret file is named `default_secrets.json`:
+You'll have to copy the configuration files into the directory containing your binary (the cloned secrets file is named `default_secrets.json`:
 ```sh
 $ cp config.json your-location/
 $ cp default_secrets.json your-location/secrets.json
