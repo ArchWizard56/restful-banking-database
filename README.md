@@ -18,8 +18,9 @@ First, clone the repo and cd into the directory:
 $ git clone https://github.com/ArchWizard56/restful-banking-database.git
 $ cd restful-banking-database
 ```
-Next, run  `make`, which will pull the necessary go dependencies:
+Next, run `make depend`, which will pull the necessary go dependencies, followed by `make`:
 ```sh
+$ make depend
 $ make
 ```
 The binary will be placed in `bin/`. Move the binary wherever you want it:
