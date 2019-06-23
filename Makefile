@@ -4,12 +4,12 @@ RUNFLAGS=-d
 BUILDFLAGS=-v
 OSFLAG='linux'
 SRCFILES=$(shell env GOOS=$(OSFLAG) go list -f '{{.GoFiles}}' | tr -d '[]')
-DEPENDFILE="dependencies.txt"
+DEPENDFILE=dependencies.txt
 
 build: $(BUILDDIR)/$(PROJECTNAME)
 .PHONY : build
 
-$(BUILDDIR)/$(PROJECTNAME): $(SRCFILES) deps
+$(BUILDDIR)/$(PROJECTNAME): $(SRCFILES)
 	env CGO_ENABLED=1 GOOS=$(OSFLAG) go build $(BUILDFLAGS) -o "$(BUILDDIR)/$(PROJECTNAME)" $(SRCFILES)
 
 gorun:
@@ -22,7 +22,8 @@ clean:
 	rm $(BUILDDIR)/$(PROJECTNAME)
 	rm $(BUILDDIR)/accounts.db
 
-.PHONY: deps
-deps:
+.PHONY: depend
+depend:
 	bash -c 'while read line; do go get -u $$line; done < $(DEPENDFILE)'
+
 
