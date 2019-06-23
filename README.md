@@ -18,15 +18,16 @@ First, clone the repo and cd into the directory:
 $ git clone https://github.com/ArchWizard56/restful-banking-database.git
 $ cd restful-banking-database
 ```
-Next, run  `make`, which will pull the necessary go dependencies:
+Next, run `make depend`, which will pull the necessary go dependencies, followed by `make`:
 ```sh
+$ make depend
 $ make
 ```
 The binary will be placed in `bin/`. Move the binary wherever you want it:
 ```sh
 $ mv bin/restful-banking-database your-location/
 ```
-You'll have to copy the configuration files into the directory containing your binary (the secret file is named `default_secrets.json`:
+You'll have to copy the configuration files into the directory containing your binary (the cloned secrets file is named `default_secrets.json`:
 ```sh
 $ cp config.json your-location/
 $ cp default_secrets.json your-location/secrets.json
