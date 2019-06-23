@@ -67,8 +67,15 @@ func LoadDB(DBPath string) *sql.DB {
 	}
 	// Initialize Default table consisting of:
 	// AccountNumber    OwnerName   Password    DiscordName     TokValue    DcBalance   CcBalance   ArBalance
-	statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS accounts (AccountNumber TEXT PRIMARY KEY, OwnerName TEXT, Password TEXT, DiscordName TEXT, TokValue TEXT, DcBalance INTEGER, CcBalance INTEGER, ArBalance INTEGER)")
-	statement.Exec()
+	var statement *sql.Stmt
+	statement, err = db.Prepare("CREATE TABLE IF NOT EXISTS accounts (AccountNumber TEXT PRIMARY KEY, OwnerName TEXT, Password TEXT, DiscordName TEXT, TokValue TEXT, DcBalance INTEGER, CcBalance INTEGER, ArBalance INTEGER)")
+	if err != nil {
+		DualErr(err)
+	}
+	_, err = statement.Exec()
+	if err != nil {
+		DualErr(err)
+	}
 	DualDebug("Initialized Database")
 	TokenCache = make(map[string]TokenValueHolder)
 	DualDebug("Initialized Token Cache")
@@ -197,7 +204,12 @@ func CreateSubAccount(db *sql.DB, username string) (Account, error) {
 	//Generate new Account Number
 	AccountNumber := genAccountNumber(db)
 	//Create the account entry in the database
-	statement, _ := db.Prepare("INSERT INTO accounts VALUES ($1, $2, $3, $4, $5, $6, $7, $8);")
+	var statement *sql.Stmt
+	statement, err = db.Prepare("INSERT INTO accounts VALUES ($1, $2, $3, $4, $5, $6, $7, $8);")
+	if err != nil {
+		DualWarning(fmt.Sprintf("%v", err))
+		return Account{}, err
+	}
 	_, err = statement.Exec(AccountNumber, username, hash, "none", TokValue, 0, 0, 0)
 	if err != nil {
 		DualWarning(fmt.Sprintf("%v", err))
