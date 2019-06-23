@@ -58,7 +58,7 @@ You can use `-c` to use a different location for the configuration file, `-s` to
 config.json:
 ```json
 {
-	"port": 8050,
+    "port": 8050,
     "database": "accounts.db"
 }
 ```
