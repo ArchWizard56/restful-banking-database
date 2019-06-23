@@ -1,7 +1,7 @@
 PROJECTNAME=restful-banking-database
 BUILDDIR=./bin
 SRCFILES=$(shell go list -f '{{.GoFiles}}' | tr -d '[]')
-RUNFLAGS="-d"
+RUNFLAGS=-d
 BUILDFLAGS=-v
 DEPENDFILE="dependencies.txt"
 
@@ -19,6 +19,7 @@ run: $(BUILDDIR)/$(PROJECTNAME)
 
 clean:
 	rm $(BUILDDIR)/$(PROJECTNAME)
+	rm $(BUILDDIR)/accounts.db
 
 deps:
 	bash -c 'while read line; do go get -u $$line; done < $(DEPENDFILE)'
