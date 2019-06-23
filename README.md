@@ -72,4 +72,4 @@ secrets.json:
 ```
 You really should change the `jwtsecret` parameter in order to secure the jwt token generation.
 ## API Documentation
-See [the documentation](API.go)
+See [the documentation](API.md)
