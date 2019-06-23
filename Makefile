@@ -1,15 +1,16 @@
 PROJECTNAME=restful-banking-database
 BUILDDIR=./bin
-SRCFILES=$(shell go list -f '{{.GoFiles}}' | tr -d '[]')
 RUNFLAGS=-d
 BUILDFLAGS=-v
+OSFLAG='windows'
+SRCFILES=$(shell env GOOS=$(OSFLAG) go list -f '{{.GoFiles}}' | tr -d '[]')
 DEPENDFILE="dependencies.txt"
 
 build: $(BUILDDIR)/$(PROJECTNAME)
 .PHONY : build
 
 $(BUILDDIR)/$(PROJECTNAME): $(SRCFILES) deps
-	go build $(BUILDFLAGS) -o "$(BUILDDIR)/$(PROJECTNAME)" $(SRCFILES)
+	env GOOS=$(OSFLAG) go build $(BUILDFLAGS) -o "$(BUILDDIR)/$(PROJECTNAME)" $(SRCFILES)
 
 gorun:
 	go run $(SRCFILES) $(RUNFLAGS)
