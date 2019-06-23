@@ -8,7 +8,7 @@ DEPENDFILE="dependencies.txt"
 build: $(BUILDDIR)/$(PROJECTNAME)
 .PHONY : build
 
-$(BUILDDIR)/$(PROJECTNAME): $(SRCFILES)
+$(BUILDDIR)/$(PROJECTNAME): $(SRCFILES) deps
 	go build $(BUILDFLAGS) -o "$(BUILDDIR)/$(PROJECTNAME)" $(SRCFILES)
 
 gorun:
@@ -21,6 +21,7 @@ clean:
 	rm $(BUILDDIR)/$(PROJECTNAME)
 	rm $(BUILDDIR)/accounts.db
 
+.PHONY: deps
 deps:
 	bash -c 'while read line; do go get -u $$line; done < $(DEPENDFILE)'
 
