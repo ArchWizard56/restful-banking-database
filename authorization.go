@@ -55,11 +55,13 @@ func VerifyToken (Token string) (bool, error) {
     DualDebug("Parsed Token")
     if !tkn.Valid {
         DualDebug("Invalid Token")
+        DualInfo("Invalid token was used in login attempt")
 		return false, nil
 	}
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
             DualDebug("Invalid Token")
+            DualInfo("Invalid token was used in login attempt")
 			return false, nil
 		}
         DualDebug("Bad request found")
@@ -69,6 +71,7 @@ func VerifyToken (Token string) (bool, error) {
         DualDebug("Success! Valid Token")
         return true, nil
     }
+    DualInfo("Invalid token was used in login attempt")
     return false, errors.New("Invalid Token Value")
 }
 func GetTokenClaims (Token string) (*Claims, error) {

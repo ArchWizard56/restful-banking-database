@@ -96,6 +96,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		w.Write(encodedResponse)
 		DualDebug(fmt.Sprintf("%s request from %s to %s", r.Method, r.RemoteAddr, r.URL.Path))
 	} else {
+        DualInfo(fmt.Sprintf("%s attempted login with bad username or password", r.RemoteAddr))
 		http.Error(w, "bad username or password", http.StatusUnauthorized)
 	}
 }
