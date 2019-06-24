@@ -1,5 +1,5 @@
 # restful-banking-database
-This project provides an api for the managment of a sqlite database containing accounts and three types of balance.
+This project provides an api for the managment of a sqlite database containing accounts and three currencies.
 
 ## Installation
 ### Note: for Non-Linux users, these instructions might be off, especially for Windows users not using Bash. Feel free to amend this documentation with instructions for other platforms
