@@ -2,7 +2,7 @@
 This project provides an api for the managment of a sqlite database containing accounts and three types of balance.
 
 ## Installation
-### Note: for non linux users, these instructions might be off, especially for windows users not using the subsystem. Feel free to amend this documentation with instructions for other platforms
+### Note: for Non-Linux users, these instructions might be off, especially for Windows users not using Bash. Feel free to amend this documentation with instructions for other platforms
 Make sure you have `go` installed:
 ```sh
 $ which go
