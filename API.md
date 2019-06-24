@@ -69,7 +69,7 @@ Activated on authorized `POST` to `/transfer`. It requres an authorization heade
 {
   "fromaccount": "<account number to transfer from>",
   "toaccount": "<account number to transfer to>",
-  "amount": <transferamount>,
+  "amount": 1,
   "type": "<transfertype>"
 }
 ```
