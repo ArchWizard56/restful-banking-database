@@ -69,8 +69,8 @@ Activated on authorized `POST` to `/transfer`. It requres an authorization heade
 {
   "fromaccount": "<account number to transfer from>",
   "toaccount": "<account number to transfer to>",
-  "amount": <amount to transfer>,
-  "type": "<transfer type>"
+  "amount": <transferamount>,
+  "type": "<transfertype>"
 }
 ```
 It will return a simple JSON body informing the user of the result. It will return a `403 Forbidden` error if the user attempts to transfer from an unowned account, a `401 Unauthorized` if the token is invalid, a `400 Bad Request` if either account number is wrong, the transfer amount is too much, or a negative number, or if the type is wrong. It will return a `500 Internal Server Error` if the sql statements error. 
