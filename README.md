@@ -79,7 +79,7 @@ $ sqlite3 <your-database>
 ```
 The default name of the database is `accounts.db`, but it can be changed in the config file. After entering the database you can update the balance with a sql statement like this:
 ```sql
-UPDATE accounts SET <balance type> = <default amount> WHERE AccountNumber = <Account Number>;
+UPDATE accounts SET <balance type> = <default amount> WHERE AccountNumber = <account number>;
 ```
 As an example:
 ```sh
