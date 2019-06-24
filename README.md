@@ -72,5 +72,19 @@ secrets.json:
 }
 ```
 You really should change the `jwtsecret` parameter in order to secure the jwt token generation.
+## Updating the database
+User accounts don't have a balance when created, so you'll have to manually update the balance of a new account to the initial value. This is done to prevent a user from creating many accounts and transfering the created amount to another account. In order to manually update the balance you can enter the database with:
+```sh
+$ sqlite3 <your-database>
+```
+The default name of the database is `accounts.db`, but it can be changed in the config file. After entering the database you can update the balance with a sql statement like this:
+```sql
+UPDATE accounts SET <balance type> = <default amount> WHERE AccountNumber = <Account Number>;
+```
+As an example:
+```sh
+$ sqlite3 accounts.db
+> UPDATE accounts SET ArBalance = 10 WHERE AccountNUmber = 11198;
+```
 ## API Documentation
 See [the documentation](API.md)
