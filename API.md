@@ -10,6 +10,7 @@ $ curl localhost:8050
 Placeholder
 ```
 ## User Account Routes
+Routes that directly deal with authentication and account creation.
 ### Register (POST /register)
 Activated on `POST` request to `/register` with a POST body containing JSON data with `username` and `password` parameters, and returns json containing a web token for interaction with the API.
 It will return a `409 Conflict` error if the account already exists or a `400 Bad Request` if there aren't `username` or `password` parameters in the body.
@@ -42,4 +43,31 @@ Example:
 ```sh
 $ curl -X POST localhost:8050/logout -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZvbyIsImV4cCI6MTU2MTMxMDQwNSwiaWF0IjoxNTYxMzEwMTA1fQ.a7D0ri_9E1_TY7UNu697y4bXVe9czowMmOOHWXjJ2Ks"
 {"result":"success"}
+```
+## Bank Account Routes
+Routes that deal with accounts and their balances
+### Accounts (GET /accounts)
+Activated on authorized`GET` to `/accounts`. It requres an authorization header containing a valid token which should take the form: `Authorization: Bearer <token>`. If the token is valid, it will return a JSON array of all accounts and balances owned by the user. It will return a `401 Unauthorized` if the token is invalid.
+
+Example:
+```sh
+$ curl localhost:8050/accounts -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZvbyIsImV4cCI6MTU2MTMxMTI3NSwiaWF0IjoxNTYxMzEwOTc1fQ.ID3_vyvbYJvnNN4TNcURl4Deex2WixCYA9yG9H58zrc"
+[{"Username":"foo","Number":"11198","CcBal":0,"DcBal":0,"ArBal":10}]
+```
+
+### Open Account (POST /openaccount)
+Activated on authorized `POST` to `/openaccount.`It requres an authorization header containing a valid token which should take the form: `Authorization: Bearer <token>`. If the token is valid, it will create a sub account under the users name with a different account number. It will return JSON data about the created account. It will return a `401 Unauthorized` if the token is invalid.
+
+Example:
+```sh
+$ curl -X POST localhost:8050/openaccount -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZvbyIsImV4cCI6MTU2MTMxMTUzOCwiaWF0IjoxNTYxMzExMjM4fQ.5q4xtJ-KJACyG3-mEWPldO0kKyNkm-E3CP13b5x4a9o"
+{"Username":"foo","Number":"25531","CcBal":0,"DcBal":0,"ArBal":0}
+```
+### Transfer (POST /transfer)
+Activated on authorized ` to `/`, and simply returns "Placeholder"
+
+Example:
+```sh
+$ curl localhost:8050
+Placeholder
 ```
