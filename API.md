@@ -64,10 +64,23 @@ $ curl -X POST localhost:8050/openaccount -H "Authorization: Bearer eyJhbGciOiJI
 {"Username":"foo","Number":"25531","CcBal":0,"DcBal":0,"ArBal":0}
 ```
 ### Transfer (POST /transfer)
-Activated on authorized ` to `/`, and simply returns "Placeholder"
-
+Activated on authorized `POST` to `/transfer`. It requres an authorization header containing a valid token which should take the form: `Authorization: Bearer <token>`. It also requires a transfer encoded in the body. The transfer takes the form of JSON with the following parameters: `fromaccount` with the value of a string tencoding the account number that the balance will be transfered from; `toaccount` with a string encoding the account receiving the transfer; `amount` with a non-negative integer representing the amount to transfer between the accounts; and `type` which encodes a string which represents which kind of balance to transfer which is either `"ArBal"`,`"CcBal"`, or `"DcBal"`. In sum, it should look like this:
+```json
+{
+  "fromaccount": "<account number to transfer from>",
+  "toaccount": "<account number to transfer to>",
+  "amount": <amount to transfer>,
+  "type": "<transfer type>"
+}
+```
+It will return a simple JSON body informing the user of the result. It will return a `403 Forbidden` error if the user attempts to transfer from an unowned account, a `401 Unauthorized` if the token is invalid, a `400 Bad Request` if either account number is wrong, the transfer amount is too much, or a negative number, or if the type is wrong. It will return a `500 Internal Server Error` if the sql statements error. 
 Example:
 ```sh
-$ curl localhost:8050
-Placeholder
+$ curl -X POST localhost:8050/transfer -d '{
+  "fromaccount": "11198",
+  "toaccount": "25531",
+  "amount": 1,
+  "type": "ArBal"
+}' -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImZvbyIsImV4cCI6MTU2MTMyMzIyMSwiaWF0IjoxNTYxMzIyOTIxfQ.d0AMqhzwljnCntHSJB6H93qMnWFu1HdGMP1UciQTC5A"
+{"result":"success"}
 ```
