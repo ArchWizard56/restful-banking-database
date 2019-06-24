@@ -34,7 +34,7 @@ $ cp default_secrets.json your-location/secrets.json
 ```
 Make sure you change the secret value in `secrets.json` from `CHANGEME`to a secret key that only you know. Here's how you would do it with `sed`:
 ```sh
-$ sed -i 's/CHANGEME/yoursecret/g' your-location/secrets.json
+$ sed -i 's/CHANGEME/<yoursecret>/g' your-location/secrets.json
 ```
 Finally, you can run the program:
 ```sh
